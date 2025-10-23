@@ -8,7 +8,7 @@ services:
   - type: web
     name: phone-validator-app
     runtime: docker # Теперь используется Dockerfile
-    plan: starter
+    plan: free # ИЗМЕНЕНО: Явно указан бесплатный план
 
     # Команды сборки: выполняются один раз при деплое.
     # Composer install выполняется внутри контейнера, где уже есть код.
