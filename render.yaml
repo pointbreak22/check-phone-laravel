@@ -1,37 +1,36 @@
-# render.yaml
-
 databases:
   - name: mysql-db
     databaseName: laravel_phone_check # Соответствует DB_DATABASE в .env
     user: root                        # Соответствует DB_USERNAME в .env
-    # Render автоматически сгенерирует случайный и безопасный пароль
-    # и предоставит его сервису через переменную DB_PASSWORD.
+    # Render автоматически сгенерирует безопасный пароль и предоставит его через переменную DB_PASSWORD.
 
 services:
   - type: web
     name: phone-validator-app
+    runtime: docker # Теперь используется Dockerfile
     plan: starter
 
-    # 1. Команды сборки: Установка зависимостей, генерация ключа, миграции и сидеры.
+    # Команды сборки: выполняются один раз при деплое.
+    # Composer install выполняется внутри контейнера, где уже есть код.
     buildCommand: |
       composer install --no-dev
       php artisan key:generate --force
-      php artisan migrate --force --seed
+      php artisan migrate --force --seed # Миграции и заполнение данными
 
-    # 2. Команда запуска: Запуск встроенного веб-сервера Laravel, слушающего на 0.0.0.0.
-    startCommand: php artisan serve --host=0.0.0.0
+    # Команда запуска: запускает встроенный веб-сервер Laravel на порту 8000 (EXPOSE в Dockerfile).
+    startCommand: php artisan serve --host=0.0.0.0 --port=8000
     healthCheckPath: /
     autoDeploy: true
 
-    # 3. Переменные окружения (Env Vars)
+    # Переменные окружения (Env Vars)
     envVars:
       # Настройки приложения
       - key: APP_KEY
-        generateValue: true # Render сгенерирует безопасный уникальный ключ (игнорирует локальный)
+        generateValue: true # Render генерирует безопасный ключ
       - key: APP_ENV
         value: production  # Установка продакшн-окружения
       - key: APP_DEBUG
-        value: 'false'     # Отключение дебага на продакшене
+        value: 'false'     # Отключение дебага
       - key: APP_URL
         fromService:
           type: web
@@ -50,12 +49,12 @@ services:
         fromDatabase:
           type: mysql
           name: mysql-db
-          property: database # Значение: laravel_phone_check
+          property: database
       - key: DB_USERNAME
         fromDatabase:
           type: mysql
           name: mysql-db
-          property: user     # Значение: root
+          property: user
       - key: DB_PASSWORD
         fromDatabase:
           type: mysql
@@ -66,8 +65,8 @@ services:
       - key: RENDER
         value: true
       - key: SESSION_DRIVER
-        value: database # Соответствует .env
+        value: database
       - key: QUEUE_CONNECTION
-        value: database # Соответствует .env
+        value: database
       - key: CACHE_STORE
-        value: database # Соответствует .env
+        value: database
