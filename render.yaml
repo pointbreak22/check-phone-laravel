@@ -1,0 +1,74 @@
+# render.yaml
+
+databases:
+  - name: mysql-db
+    databaseName: laravel_phone_check # Соответствует DB_DATABASE в .env
+    user: root                        # Соответствует DB_USERNAME в .env
+    # Render автоматически сгенерирует случайный и безопасный пароль
+    # и предоставит его сервису через переменную DB_PASSWORD.
+
+services:
+  - type: web
+    name: phone-validator-app
+    env: php
+    plan: starter
+
+    # 1. Команды сборки: Установка зависимостей, генерация ключа, миграции и сидеры.
+    buildCommand: |
+      composer install --no-dev
+      php artisan key:generate --force
+      php artisan migrate --force --seed
+
+    # 2. Команда запуска: Запуск встроенного веб-сервера Laravel, слушающего на 0.0.0.0.
+    startCommand: php artisan serve --host=0.0.0.0
+    healthCheckPath: /
+    autoDeploy: true
+
+    # 3. Переменные окружения (Env Vars)
+    envVars:
+      # Настройки приложения
+      - key: APP_KEY
+        generateValue: true # Render сгенерирует безопасный уникальный ключ (игнорирует локальный)
+      - key: APP_ENV
+        value: production  # Установка продакшн-окружения
+      - key: APP_DEBUG
+        value: 'false'     # Отключение дебага на продакшене
+      - key: APP_URL
+        fromService:
+          type: web
+          name: phone-validator-app
+          property: host
+
+      # Настройки базы данных (Динамические ссылки на сервис MySQL)
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromDatabase:
+          type: mysql
+          name: mysql-db
+          property: host
+      - key: DB_DATABASE
+        fromDatabase:
+          type: mysql
+          name: mysql-db
+          property: database # Значение: laravel_phone_check
+      - key: DB_USERNAME
+        fromDatabase:
+          type: mysql
+          name: mysql-db
+          property: user     # Значение: root
+      - key: DB_PASSWORD
+        fromDatabase:
+          type: mysql
+          name: mysql-db
+          property: password # Безопасный пароль от Render
+
+      # Дополнительные настройки
+      - key: RENDER
+        value: true
+      - key: SESSION_DRIVER
+        value: database # Соответствует .env
+      - key: QUEUE_CONNECTION
+        value: database # Соответствует .env
+      - key: CACHE_STORE
+        value: database # Соответствует .env
