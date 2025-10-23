@@ -10,7 +10,6 @@ databases:
 services:
   - type: web
     name: phone-validator-app
-    runtime: php
     plan: starter
 
     # 1. Команды сборки: Установка зависимостей, генерация ключа, миграции и сидеры.
